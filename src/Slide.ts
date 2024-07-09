@@ -8,6 +8,8 @@ export default class Slide {
   public index;
   public slide;
   public timeout:Timeout | null;
+  pausedTimeout: Timeout | null;
+  public paused:boolean;
 
   constructor(
     container: Element,
@@ -21,8 +23,10 @@ export default class Slide {
     this.time = time; 
   
     this.timeout = null;
+    this.pausedTimeout = null;
     this.index = 0;
     this.slide = this.slides[this.index]
+    this.paused = false;
 
     this.init();
 
@@ -46,17 +50,35 @@ export default class Slide {
   }
 
   prev(){
+    if(this.paused) return;
     const prev = this.index - 1;
     if(prev >= 0){
-      this.show(this.index - 1) ;
+      this.show(prev) ;
     }
   }
 
   next(){
+    if(this.paused) return;
     const next = this.index + 1;
     if(next < this.slides.length){
-      this.show(this.index + 1);
+      this.show(next);
     }
+  }
+
+  pause(){
+    this.pausedTimeout = new Timeout(() => {
+      this.timeout?.pause();
+      this.paused = true
+    },300)
+  }
+
+  continue(){
+    this.pausedTimeout?.clear();
+    if(this.paused){
+      this.paused = false;
+      this.timeout?.continue();
+    }
+    
   }
 
   private addControls(){
@@ -66,6 +88,10 @@ export default class Slide {
     this.controls.appendChild(prevButton);
     nextButton.innerText = "Próximo Slide"
     this.controls.appendChild(nextButton);
+
+    this.controls.addEventListener("pointerdown", () => this.pause())
+    this.controls.addEventListener("pointerup", () => this.continue())
+
     nextButton.addEventListener("pointerup", () => this.next())
     prevButton.addEventListener("pointerup", () => this.prev())
   }
